@@ -341,12 +341,12 @@ def findlimitf(data, part = 0.5):
 #images  = array([numpy.array(Image.open("{0}.png".format(str(i).zfill(2))).convert('RGB')) for i in range(14,22)])
 #images  = array([numpy.array(Image.open("{0}.png".format(str(i).zfill(2))).convert('RGB')) for i in range(0,80)])
 #images  = array([numpy.array(Image.open("psy/{0}.png".format(str(i).zfill(8))).convert('RGB')) for i in range(1,50)])
-#images  = array([numpy.array(image2array(Image.open("ASDSpin/{0}.png".format(str(i).zfill(8))).convert('RGB'))) for i in range(1,33)])
-#images  = array([numpy.array(image2array(Image.open("mito/{0}.png".format(str(i).zfill(8))).convert('RGB'))) for i in range(1,150)])
+images  = array([numpy.array(image2array(Image.open("ASDSpin/{0}.png".format(str(i).zfill(8))).convert('RGB'))) for i in range(1,33)])
+#images  = array([numpy.array(image2array(Image.open("mito/{0}.png".format(str(i).zfill(8))).convert('RGB'))) for i in range(1,33)])
 #images  = array([numpy.array(image2array(Image.open("../analoguecompression/py/{0}.png".format(str(i).zfill(2))).convert('RGB'))) for i in range(5, 37)])
 #images  = array([numpy.array(image2array(Image.open("psy/{0}.png".format(str(i).zfill(8))).convert('RGB'))) for i in range(1,33)]) # split: parking, lift
 #images  = array([numpy.array(image2array(Image.open("psy/{0}.png".format(str(i).zfill(8))).convert('RGB'))) for i in range(1,15)]) #before lift
-images  = array([numpy.array(image2array(Image.open("psy/{0}.png".format(str(i).zfill(8))).convert('RGB'))) for i in range(15,47)]) # lift scene
+#images  = array([numpy.array(image2array(Image.open("psy/{0}.png".format(str(i).zfill(8))).convert('RGB'))) for i in range(15,47)]) # lift scene
 #images  = array([numpy.array(image2array(Image.open("wom/{0}.png".format(str(i).zfill(2))).convert('RGB'))) for i in range(1,33)]) # wom: Clip
 ##images  = array([numpy.array(image2array(Image.open("psy/{0}.png".format(str(i).zfill(8))).convert('RGB'))) for i in range(1,3)])
 print "Loaded", len(images)

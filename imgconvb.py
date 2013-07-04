@@ -315,8 +315,8 @@ yuvtorgb = array([[ 1   , 0         ,  1.28033 ],
 #yuvc = reduce(lambda t,e: numpy.concatenate((t, e)), yuv)
 #yuvc.tofile("input.raw")
 #BW
-if True:
-    rev = numpy.fromfile("output.raw", dtype="int16").reshape([1,32,128,256])
+if False:
+    rev = numpy.fromfile("output.raw", dtype="int8").reshape([1,32,128,256])
     #rev = numpy.fromfile("input.raw", dtype="uint8").reshape([1,32,128,256])
     revmerged = numpy.zeros([32,128,256,1])
     for i in range(1):
