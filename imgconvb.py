@@ -32,7 +32,7 @@ def image2array(image):
     return numpy.asarray(image)
     #arr = numpy.fromstring(image.tostring(), numpy.uint8)
     #arr.shape = (image.size[1], image.size[0], len(image.getbands()))
-    #return arr.swapaxes(0, 2).swapaxes(1, 2).astype(numpy.float32)
+    #return arr.swapaxes(0, 2).swapaxes(1, 2).astype(numpy.floatnumframes)
 
 
 def array2image(arr, mode):
@@ -315,10 +315,11 @@ yuvtorgb = array([[ 1   , 0         ,  1.28033 ],
 #yuvc = reduce(lambda t,e: numpy.concatenate((t, e)), yuv)
 #yuvc.tofile("input.raw")
 #BW
+numframes = 32
 if False:
-    rev = numpy.fromfile("output.raw", dtype="int8").reshape([1,32,128,256])
-    #rev = numpy.fromfile("input.raw", dtype="uint8").reshape([1,32,128,256])
-    revmerged = numpy.zeros([32,128,256,1])
+    rev = numpy.fromfile("output.raw", dtype="int8").reshape([1,numframes,128,256])
+    #rev = numpy.fromfile("input.raw", dtype="uint8").reshape([1,numframes,128,256])
+    revmerged = numpy.zeros([numframes,128,256,1])
     for i in range(1):
         revmerged[:,:,:,i] = (rev[i].clip(-127.0, 127.0)+127.0)    #int16_t
         #revmerged[:,:,:,i] = (rev[i].clip(0.0, 255.0)-127.0)/127.0    #uint8_t
@@ -326,11 +327,11 @@ if False:
         savearray(numpy.squeeze(revmerged[i]), "wcFromC{0}.png".format(str(i).zfill(4)), "L");
 else:
     #YUV
-    rev = numpy.fromfile("output.raw", dtype="int16").reshape([3,32,128,256])
-    #rev = numpy.fromfile("input.raw", dtype="uint8").reshape([3,32,128,256])
-    revmerged = numpy.zeros([32,128,256,3])
+    rev = numpy.fromfile("output.raw", dtype="int16").reshape([3,numframes,128,256])
+    #rev = numpy.fromfile("input.raw", dtype="uint8").reshape([3,numframes,128,256])
+    revmerged = numpy.zeros([numframes,128,256,3])
     for i in range(3):
         revmerged[:,:,:,i] = ((rev[i]).clip(-127.0, 127.0))/127.0    #int16_t
         #revmerged[:,:,:,i] = (rev[i].clip(0.0, 255.0)-127.0)/127.0    #uint8_t
     for i in range(len(revmerged)):
-        savearray(numpy.dot(revmerged[i], yuvtorgb.T)*350.0, "wcFromC{0}.png".format(str(i).zfill(4)), "RGB");
+        savearray(numpy.dot(revmerged[i], yuvtorgb.T)*375.0, "wcFromC{0}.png".format(str(i).zfill(4)), "RGB");

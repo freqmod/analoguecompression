@@ -341,15 +341,17 @@ def findlimitf(data, part = 0.5):
 #images  = array([numpy.array(Image.open("{0}.png".format(str(i).zfill(2))).convert('RGB')) for i in range(14,22)])
 #images  = array([numpy.array(Image.open("{0}.png".format(str(i).zfill(2))).convert('RGB')) for i in range(0,80)])
 #images  = array([numpy.array(Image.open("psy/{0}.png".format(str(i).zfill(8))).convert('RGB')) for i in range(1,50)])
-images  = array([numpy.array(image2array(Image.open("ASDSpin/{0}.png".format(str(i).zfill(8))).convert('RGB'))) for i in range(1,33)])
+#images  = array([numpy.array(image2array(Image.open("ASDSpin/{0}.png".format(str(i).zfill(8))).convert('RGB'))) for i in range(1,33)])
 #images  = array([numpy.array(image2array(Image.open("mito/{0}.png".format(str(i).zfill(8))).convert('RGB'))) for i in range(1,33)])
-#images  = array([numpy.array(image2array(Image.open("../analoguecompression/py/{0}.png".format(str(i).zfill(2))).convert('RGB'))) for i in range(5, 37)])
+images  = array([numpy.array(image2array(Image.open("../analoguecompression/py/{0}.png".format(str(i).zfill(2))).convert('RGB'))) for i in range(5, 37)])
 #images  = array([numpy.array(image2array(Image.open("psy/{0}.png".format(str(i).zfill(8))).convert('RGB'))) for i in range(1,33)]) # split: parking, lift
-#images  = array([numpy.array(image2array(Image.open("psy/{0}.png".format(str(i).zfill(8))).convert('RGB'))) for i in range(1,15)]) #before lift
+#images  = array([numpy.array(image2array(Image.open("psy/{0}.png".format(str(i).zfill(8))).convert('RGB'))) for i in range(1,17)]) #before lift # NEEDS SPECIAL CODE
 #images  = array([numpy.array(image2array(Image.open("psy/{0}.png".format(str(i).zfill(8))).convert('RGB'))) for i in range(15,47)]) # lift scene
 #images  = array([numpy.array(image2array(Image.open("wom/{0}.png".format(str(i).zfill(2))).convert('RGB'))) for i in range(1,33)]) # wom: Clip
 ##images  = array([numpy.array(image2array(Image.open("psy/{0}.png".format(str(i).zfill(8))).convert('RGB'))) for i in range(1,3)])
 print "Loaded", len(images)
+if(len(images)!=32):
+    print "WARNING: Image length not 32, will cause problems in compressor"
 #images  = array([numpy.array(Image.open("{0}.png".format(str(i).zfill(2))).convert('L')) for i in range(12,20)])
 #images  = array([numpy.array(Image.open("{0}.png".format(str(i).zfill(2))).convert('RGB')) for i in range(12,28)])
 #images  = array([numpy.array(Image.open("{0}.png".format(str(i).zfill(2))).convert('RGB')) for i in range(12,14)])
@@ -375,7 +377,7 @@ yuvtorgb = array([[ 1   , 0         ,  1.28033 ],
 #yuvtorgb[:,0]  *= 255./219.
 #yuvtorgb[:,1:] *= 255./112.
     
-yuvimgs = array([127.0+(127.0*numpy.dot(image / 350.0, rgbtoyuv.T)) for image in images])
+yuvimgs = array([127.0+(127.0*numpy.dot(image / 375.0, rgbtoyuv.T)) for image in images])
 #yuv = [numpy.zeros(yuvimgs.shape[0:3])]*3
 #for i in xrange(3):
 #    yuv[i] = yuvimgs[:,:,:,i]
