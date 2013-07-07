@@ -50,6 +50,7 @@ int main(){
 	WAVELET_TYPE *sdata = (WAVELET_TYPE*)calloc(fsize,sizeof(WAVELET_TYPE));
 	WAVELET_TYPE *tdata = (WAVELET_TYPE*)calloc(fsize,sizeof(WAVELET_TYPE));
 	uint8_t *mdata = (uint8_t*)calloc(fsize,sizeof(uint8_t));//bool
+	memset(mdata,0,sizeof(uint8_t)*fsize);
 	int r = fread(idata, 1, fsize, inf);
 	fclose(inf);
 	int c,i,j,k,l,p, limit, count, reso, rsize, cutoff;
@@ -89,8 +90,8 @@ int main(){
 	}
 	//SPIHT compression init
 	uint8_t fracts[3][10] = {{1,1, 1,1, 2,3, 0,0, 0,0},
-						     {1,8, 0,0, 2,3, 0,0, 0,0}, 
-						     {1,8, 0,0, 2,3, 0,0, 0,0}};
+						     {1,8, 0,0, 0,0, 0,0, 0,0}, 
+						     {1,8, 0,0, 0,0, 0,0, 0,0}};
 #define COUNTS_SIZE (1<<((8*sizeof(WAVELET_TYPE)-1)))
 	WAVELET_TYPE counts[COUNTS_SIZE]; 
 
@@ -99,9 +100,12 @@ int main(){
 	for(c = 0;c<3;c++){
 		for(l = 0;l<WREC;l++){
 			for(p = 1;p<8;p++){
-				if(fracts[c][l*2+1]>0){
-					rsize += (getlength(l,WREC, NUMFRAMES)*getlength(l,WREC, 128)*getlength(l,WREC, 256)*fracts[c][l*2])/fracts[c][l*2+1];
-				}
+					//rsize += (getlength(l,WREC, NUMFRAMES)*getlength(l,WREC, 128)*getlength(l,WREC, 256)*fracts[c][l*2])/fracts[c][l*2+1];
+					if (l == 0){
+						rsize+= (getlength(l,WREC, NUMFRAMES)*getlength(l,WREC, 128)*getlength(l,WREC, 256));
+					}else{
+						rsize+= (fracts[c][(l-1)*2+1]==0)?0:((8*getlength(l-1,WREC, NUMFRAMES)*getlength(l-1,WREC, 128)*getlength(l-1,WREC, 256))*fracts[c][(l-1)*2])/fracts[c][(l-1)*2+1];
+					}
 			}
 		}
 	}
@@ -112,27 +116,31 @@ int main(){
 		for(l = 0;l<WREC;l++){
 			for(p = 1;p<8;p++){
 				int o = getoffset(l,p,WREC,NUMFRAMES,128,256);
-				if(fracts[c][l*2+1]>0){
-					//counting sort 
-					memset(counts, 0, COUNTS_SIZE*sizeof(WAVELET_TYPE));
-					for(i = 0;i<getlength(l,WREC, NUMFRAMES);i++){
-						for(j = 0;j<getlength(l,WREC, 128);j++){
-							for(k = 0;k<getlength(l,WREC, 256);k++){
-								counts[abs(sdata[(c*32*128*256)+o+((i*128+j)*256)+k])]++;
-								//if(sdata[(c*32*128*256)+o+((i*128+j)*256)+k]!=0)
-									//printf("CO:%d=%d\n", sdata[(c*32*128*256)+o+((i*128+j)*256)+k], counts[abs(sdata[(c*32*128*256)+o+((i*128+j)*256)+k])]);
+				int aboveOffset = getoffset(l-1,p,WREC,NUMFRAMES,128,256);
+				if(l==0||fracts[c][(l-1)*2+1]>0){
+					limit = fracts[c][l*2+1] == 0 ? 0: (getlength(l,WREC, NUMFRAMES)*getlength(l,WREC, 128)*getlength(l,WREC, 256)*fracts[c][l*2])/fracts[c][l*2+1];
+					count = 0;
+					if(limit > 0){
+						//counting sort 
+						memset(counts, 0, COUNTS_SIZE*sizeof(WAVELET_TYPE));
+						for(i = 0;i<getlength(l,WREC, NUMFRAMES);i++){
+							for(j = 0;j<getlength(l,WREC, 128);j++){
+								for(k = 0;k<getlength(l,WREC, 256);k++){
+									counts[abs(sdata[(c*32*128*256)+o+((i*128+j)*256)+k])]++;
+									//if(sdata[(c*32*128*256)+o+((i*128+j)*256)+k]!=0)
+										//printf("CO:%d=%d\n", sdata[(c*32*128*256)+o+((i*128+j)*256)+k], counts[abs(sdata[(c*32*128*256)+o+((i*128+j)*256)+k])]);
+								}
 							}
 						}
-					}
-					limit = (getlength(l,WREC, NUMFRAMES)*getlength(l,WREC, 128)*getlength(l,WREC, 256)*fracts[c][l*2])/fracts[c][l*2+1];
-					count = 0;
-					for(i = COUNTS_SIZE-1; i>=0; i--){
-						count += counts[i];
-						//printf("CA %i: %d\n", i, counts[i]);
-						if(count > limit){
-							printf("Breakatlimit %d: %d\n", i, counts[i]);
-							count -= counts[i];
-							break;
+
+						for(i = COUNTS_SIZE-1; i>=0; i--){
+							count += counts[i];
+							//printf("CA %i: %d\n", i, counts[i]);
+							if(count > limit){
+								printf("Breakatlimit %d: %d\n", i, counts[i]);
+								count -= counts[i];
+								break;
+							}
 						}
 					}
 					cutoff = i;
@@ -141,35 +149,48 @@ int main(){
 					for(i = 0;i<getlength(l,WREC, NUMFRAMES);i++){
 						for(j = 0;j<getlength(l,WREC, 128);j++){
 							for(k = 0;k<getlength(l,WREC, 256);k++){
-								if(abs(sdata[(c*32*128*256)+o+((i*128+j)*256)+k]) > cutoff){
+								if(limit > 0 && abs(sdata[(c*32*128*256)+o+((i*128+j)*256)+k]) > cutoff){
 									mdata[(c*32*128*256)+o+((i*128+j)*256)+k] = 1;
 									//printf("Testadd%d\n", reso);
-									rdata[reso++] = sdata[(c*32*128*256)+o+((i*128+j)*256)+k];
+									
 									//printf("TestAdd%d\n", reso);
-								} else if (abs(sdata[(c*32*128*256)+o+((i*128+j)*256)+k]) == limit &&
+								} else if (limit > 0 &&
+									abs(sdata[(c*32*128*256)+o+((i*128+j)*256)+k]) == limit &&
 									count < limit){
 									//this should idealy be distruted eavenly over the picture
-									rdata[reso++] = sdata[(c*32*128*256)+o+((i*128+j)*256)+k];
+									//rdata[reso++] = sdata[(c*32*128*256)+o+((i*128+j)*256)+k];
 									mdata[(c*32*128*256)+o+((i*128+j)*256)+k] = 1;
 									//printf("TestBDD%d\n", reso);
 									count++;
 								} else{
 									mdata[(c*32*128*256)+o+((i*128+j)*256)+k] = 0;
 								}
+								
+								if(l==0||(l>0 && mdata[aboveOffset+(c*32*128*256)+(((i/2)*128+(j/2))*256)+(k/2)])){
+									rdata[reso++] = sdata[(c*32*128*256)+((i*128+j)*256)+k];
+								}
 							}
 						}
 					}
 					//Add extra data to results if neccesary
 					//printf("Offset after pack:Reso:%d Rem: %d (L:%d,P:%d;C:%d) [%d<%d]=%d*%d/%d\n", reso, rsize-reso, l, p, cutoff, count,limit, getlength(l,WREC, NUMFRAMES)*getlength(l,WREC, 128)*getlength(l,WREC, 256),fracts[c][l*2],fracts[c][l*2+1]);
-					for(i=count;i<limit;i++){
+					int aboveLen;
+					if (l == 0){
+						aboveLen = (getlength(l,WREC, NUMFRAMES)*getlength(l,WREC, 128)*getlength(l,WREC, 256));
+					}else{
+						aboveLen = (fracts[c][(l-1)*2+1]==0)?0:((8*getlength(l-1,WREC, NUMFRAMES)*getlength(l-1,WREC, 128)*getlength(l-1,WREC, 256))*fracts[c][(l-1)*2])/fracts[c][(l-1)*2+1];
+					} 
+					if(reso<(preoffset+aboveLen)){
+						printf("Must pad: (C:%d,L:%d,P:%d) Pad:%d+Retr:%d=Len:%d\n", c,l,p,(preoffset+aboveLen)-reso, reso-preoffset, aboveLen);
+						//printf("Padded: R:%d, (C:%d,L:%d,P:%d) D:%d, retrieved %d (co:%d)\n", reso, c, l, p,  abov-count, count,cutoff);
+					}					
+
+					for(;reso<(preoffset+aboveLen);reso++){
 						//printf("Padding%d\n",i);
-						rdata[reso++] = 0;
+						rdata[reso] = 0;
 					}
-					if(count<limit){
-						printf("Padded: R:%d, (C:%d,L:%d,P:%d) D:%d, retrieved %d (co:%d)\n", reso, c, l, p,  limit-count, count,cutoff);
-					}
-					if(reso-preoffset != limit){
-						printf("Wrong progress %d!=%d (%d,%d) %d\n", reso-preoffset, limit, l,p, limit-count);	
+					if( reso-preoffset != aboveLen){
+						printf("Wrong progress %d!=%d (%d, %d,%d) %d\n", reso-preoffset, aboveLen, c, l,p, reso-(aboveLen+preoffset));	
 					}
 				}
 			}
