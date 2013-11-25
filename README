@@ -1,4 +1,7 @@
 USE:
+Current license: Agplv3. Will most probably be rereleased in a more permissive license at a later date. Contact me if you
+are interessted in forking and would like a more permissive license.  (At least normal GPLv2, maybe also BSD). 
+
 Idea:
 Use advanced techniques for transforming data from digital video compression in an "analogue way",
 i.e. only do steps which are continous (not discreete) and present the resulting values as symbols directly to 
@@ -14,6 +17,7 @@ Compression into analogue symbols for (hopefully one day) use over 2.7khz hf ama
 * modify cwttest to enable the demod macro to demodulate the compressed file and view the demodulated data. 
 
 btw code is made for prototyping, not to be pretty or efficient.
+
 --
 73 de LA5UTA (Frederik M.J.V)
 

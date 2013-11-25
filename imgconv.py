@@ -1,8 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2006-2012 Filip Wasilewski <http://en.ig.ma/>
-# See COPYING for license details.
+#Copyright 2013 Frederik M.J. Vestre AGplv3
 
 import optparse
 import os
@@ -68,8 +67,8 @@ def savearray(array, name, target="RGB"):
 #images  = array([numpy.array(Image.open("psy/{0}.png".format(str(i).zfill(8))).convert('RGB')) for i in range(1,50)])
 #images  = array([numpy.array(image2array(Image.open("ASDSpin/{0}.png".format(str(i).zfill(8))).convert('RGB'))) for i in range(1,33)])
 #images  = array([numpy.array(image2array(Image.open("mito/{0}.png".format(str(i).zfill(8))).convert('RGB'))) for i in range(1,33)])
-#images  = array([numpy.array(image2array(Image.open("../analoguecompression/py/{0}.png".format(str(i).zfill(2))).convert('RGB'))) for i in range(5, 37)])
-images  = array([numpy.array(image2array(Image.open("psy/{0}.png".format(str(i).zfill(8))).convert('RGB'))) for i in range(1,33)]) # split: parking, lift
+images  = array([numpy.array(image2array(Image.open("../analoguecompression/py/{0}.png".format(str(i).zfill(2))).convert('RGB'))) for i in range(5, 37)])
+#images  = array([numpy.array(image2array(Image.open("psy/{0}.png".format(str(i).zfill(8))).convert('RGB'))) for i in range(1,33)]) # split: parking, lift
 #images  = array([numpy.array(image2array(Image.open("psy/{0}.png".format(str(i).zfill(8))).convert('RGB'))) for i in range(1,17)]) #before lift # NEEDS SPECIAL CODE
 #images  = array([numpy.array(image2array(Image.open("psy/{0}.png".format(str(i).zfill(8))).convert('RGB'))) for i in range(15,47)]) # lift scene
 #images  = array([numpy.array(image2array(Image.open("wom/{0}.png".format(str(i).zfill(2))).convert('RGB'))) for i in range(1,33)]) # wom: Clip
