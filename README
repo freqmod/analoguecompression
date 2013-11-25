@@ -1,0 +1,10 @@
+USE:
+Compression into analogue symbols for (hopefully one day) use over 2.7khz hf amateur radio links
+* use imgconv.py to convert png files to raw files
+* run cwttest to compress and decompress the files
+* run one of the modemtest grc sheets to modulate and demodulate the compressed file.
+* modify cwttest to enable the demod macro to demodulate the compressed file and view the demodulated data. 
+
+--
+73 LA5UTA (Frederik M.J.V)
+

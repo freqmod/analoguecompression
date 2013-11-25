@@ -1,3 +1,5 @@
+#(c) 2013 Frederik M.J. Vestre 
+#Licensed under: http://www.gnu.org/licenses/agpl-3.0.html
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -19,6 +21,7 @@
 //#define ABSDATA 1
 //#define SIMPLENOISE 1
 //NUMFRAMES768
+//#define DEMODONLY
 void d3fwt(WAVELET_TYPE* x, int sdiv, int d, int h, int w);
 void d3iwt(WAVELET_TYPE* x, int sdiv, int d, int h, int w);
 void fwt53(WAVELET_TYPE* x,int n, int stride);
@@ -41,19 +44,77 @@ inline int getlength(int level, int recursion, int original){
 }
 
 int main(){
+#define R16_1K
+#ifdef R4_8K
+	uint8_t fracts[3][8] =  {{1,1, 5,32, 0,0, 0,0},
+						     {0,0, 0,0, 0,0, 0,0}, 
+						     {0,0, 0,0, 0,0, 0,0}};
+#endif
+#ifdef R19_2K
+	uint8_t fracts[3][8] =  {{1,1, 10,12, 4,128, 0,0},
+						     {3,10, 0,0,  0,0, 0,0}, 
+						     {3,10, 0,0,  0,0, 0,0}};
+#endif
+#ifdef R16_1K
+	uint8_t fracts[3][8] =  {{1,1, 10,12, 1,128, 0,0},
+						     {2,10, 0,0,  0,0, 0,0}, 
+						     {2,10, 0,0,  0,0, 0,0}};
+#endif
+#ifdef R24K
+	uint8_t fracts[3][8] =  {{1,1, 10,12, 9,128, 0,0},
+						     {4,10, 0,0,  0,0, 0,0}, 
+						     {4,10, 0,0,  0,0, 0,0}};
+#endif
+#ifdef R38_4K
+
+	uint8_t fracts[3][8] =  {{1,1, 10,12, 24,128, 0,0},
+						     {10,16, 0,0,  0,0, 0,0}, 
+						     {11,16, 0,0,  0,0, 0,0}};
+#endif
+#ifdef BIG_K
+	uint8_t fracts[3][8] =  {{1,1, 10,16, 120,128, 0,0},
+						     {10,16, 10,16,  0,0, 0,0}, 
+						     {11,16, 10,16,  0,0, 0,0}};
+#endif
+#define COUNTS_SIZE (1<<((8*sizeof(WAVELET_TYPE)-1)))
+	size_t fsize = NUMFRAMES*128*256*3;
+	WAVELET_TYPE counts[COUNTS_SIZE]; 
+	uint8_t *mdata = (uint8_t*)calloc(fsize,sizeof(uint8_t));//bool
+	WAVELET_TYPE *tdata = (WAVELET_TYPE*)calloc(fsize,sizeof(WAVELET_TYPE));
+	memset(mdata,0,sizeof(uint8_t)*fsize);
+	int c,i,j,k,l,p, o, reso, preoffset, rsize, limit, count, cutoff;
+
+	rsize = 0; //size of packed result
+	reso = 0;
+	for(c = 0;c<3;c++){
+		p = l = 0;
+		rsize+= (getlength(l,WREC, NUMFRAMES)*getlength(l,WREC, 128)*getlength(l,WREC, 256));
+		for(l = 0;l<WREC;l++){
+			for(p = 1;p<8;p++){
+					//rsize += (getlength(l,WREC, NUMFRAMES)*getlength(l,WREC, 128)*getlength(l,WREC, 256)*fracts[c][l*2])/fracts[c][l*2+1];
+					if (l == 0){
+						rsize+= (getlength(l,WREC, NUMFRAMES)*getlength(l,WREC, 128)*getlength(l,WREC, 256));
+					}else{
+						rsize+= (fracts[c][(l-1)*2+1]==0)?0:((8*getlength(l-1,WREC, NUMFRAMES)*getlength(l-1,WREC, 128)*getlength(l-1,WREC, 256))*fracts[c][(l-1)*2])/fracts[c][(l-1)*2+1];
+					}
+			}
+		}
+	}
+	WAVELET_TYPE *rdata = (WAVELET_TYPE*)calloc(rsize,sizeof(WAVELET_TYPE)); // (result compressed)
+
+#ifdef  DEMODONLY
+	FILE *inf = fopen("demod.raw", "rb");
+	int r = fread(rdata, 1, rsize*sizeof(WAVELET_TYPE), inf);
+	fclose(inf);
+#else	
 	FILE *inf = fopen("input.raw", "rb");
 	fseek(inf, 0L, SEEK_END);
 	//size_t fsize = ftell(inf);
-	size_t fsize = NUMFRAMES*128*256*3;
 	fseek(inf, 0L, SEEK_SET);
 	uint8_t *idata = (uint8_t*)malloc(fsize);
 	WAVELET_TYPE *sdata = (WAVELET_TYPE*)calloc(fsize,sizeof(WAVELET_TYPE));
-	WAVELET_TYPE *tdata = (WAVELET_TYPE*)calloc(fsize,sizeof(WAVELET_TYPE));
-	uint8_t *mdata = (uint8_t*)calloc(fsize,sizeof(uint8_t));//bool
-	memset(mdata,0,sizeof(uint8_t)*fsize);
 	int r = fread(idata, 1, fsize, inf);
 	fclose(inf);
-	int c,i,j,k,l,p, limit, count, reso, rsize, cutoff;
 	for(i=0;i<fsize;i++){ // convert to short
 		sdata[i] = idata[i]-127;
 		tdata[i] = sdata[i];
@@ -89,33 +150,22 @@ int main(){
 		}
 	}
 	//SPIHT compression init
-	uint8_t fracts[3][10] = {{1,1, 1,1, 2,3, 0,0, 0,0},
-						     {1,8, 0,0, 0,0, 0,0, 0,0}, 
-						     {1,8, 0,0, 0,0, 0,0, 0,0}};
-#define COUNTS_SIZE (1<<((8*sizeof(WAVELET_TYPE)-1)))
-	WAVELET_TYPE counts[COUNTS_SIZE]; 
-
-	rsize = 0; //size of packed result
 	reso = 0;
+	preoffset = 0, o = 0;
+	//SPIHT compression
 	for(c = 0;c<3;c++){
-		for(l = 0;l<WREC;l++){
-			for(p = 1;p<8;p++){
-					//rsize += (getlength(l,WREC, NUMFRAMES)*getlength(l,WREC, 128)*getlength(l,WREC, 256)*fracts[c][l*2])/fracts[c][l*2+1];
-					if (l == 0){
-						rsize+= (getlength(l,WREC, NUMFRAMES)*getlength(l,WREC, 128)*getlength(l,WREC, 256));
-					}else{
-						rsize+= (fracts[c][(l-1)*2+1]==0)?0:((8*getlength(l-1,WREC, NUMFRAMES)*getlength(l-1,WREC, 128)*getlength(l-1,WREC, 256))*fracts[c][(l-1)*2])/fracts[c][(l-1)*2+1];
-					}
+		p = l = o = 0;
+		for(i = 0;i<getlength(l,WREC, NUMFRAMES);i++){
+			for(j = 0;j<getlength(l,WREC, 128);j++){
+				for(k = 0;k<getlength(l,WREC, 256);k++){
+					rdata[reso++] = sdata[(c*32*128*256)+((i*128+j)*256)+k];
+					mdata[(c*32*128*256)+o+((i*128+j)*256)+k] = 1;
+				}
 			}
 		}
-	}
-	int preoffset = 0;
-	//SPIHT compression, not correct yet
-	WAVELET_TYPE *rdata = (WAVELET_TYPE*)calloc(rsize,sizeof(WAVELET_TYPE));
-	for(c = 0;c<3;c++){
 		for(l = 0;l<WREC;l++){
 			for(p = 1;p<8;p++){
-				int o = getoffset(l,p,WREC,NUMFRAMES,128,256);
+				o = getoffset(l,p,WREC,NUMFRAMES,128,256);
 				int aboveOffset = getoffset(l-1,p,WREC,NUMFRAMES,128,256);
 				if(l==0||fracts[c][(l-1)*2+1]>0){
 					limit = fracts[c][l*2+1] == 0 ? 0: (getlength(l,WREC, NUMFRAMES)*getlength(l,WREC, 128)*getlength(l,WREC, 256)*fracts[c][l*2])/fracts[c][l*2+1];
@@ -137,7 +187,7 @@ int main(){
 							count += counts[i];
 							//printf("CA %i: %d\n", i, counts[i]);
 							if(count > limit){
-								printf("Breakatlimit %d: %d\n", i, counts[i]);
+								//printf("Breakatlimit %d: %d\n", i, counts[i]);
 								count -= counts[i];
 								break;
 							}
@@ -167,7 +217,14 @@ int main(){
 								}
 								
 								if(l==0||(l>0 && mdata[aboveOffset+(c*32*128*256)+(((i/2)*128+(j/2))*256)+(k/2)])){
-									rdata[reso++] = sdata[(c*32*128*256)+((i*128+j)*256)+k];
+#ifdef VERBOSEPRINT
+									if(l>0){
+										printf("Compress %d, %d: %d\n", (c*32*128*256)+o+((i*128+j)*256)+k, reso, sdata[(c*32*128*256)+o+((i*128+j)*256)+k]);
+
+									}
+#endif
+									rdata[reso++] = sdata[(c*32*128*256)+o+((i*128+j)*256)+k];
+
 								}
 							}
 						}
@@ -188,6 +245,9 @@ int main(){
 					for(;reso<(preoffset+aboveLen);reso++){
 						//printf("Padding%d\n",i);
 						rdata[reso] = 0;
+#if VERBOSEPRINT
+						printf("Pad: %d, 0\n", reso);
+#endif
 					}
 					if( reso-preoffset != aboveLen){
 						printf("Wrong progress %d!=%d (%d, %d,%d) %d\n", reso-preoffset, aboveLen, c, l,p, reso-(aboveLen+preoffset));	
@@ -199,34 +259,149 @@ int main(){
 	if(reso != rsize){
 		printf("Wrong progress at end %d\n", rsize-reso);
 	}
+	#endif
 	//SPIHT decompression
+	//printf("------------- Decompress ---------------\n");
+	WAVELET_TYPE *odata = (WAVELET_TYPE*)calloc(fsize,sizeof(WAVELET_TYPE)); // output (decompressed)
+	memset(odata,0,sizeof(WAVELET_TYPE)*fsize);
+	memset(mdata,0,sizeof(uint8_t)*fsize); // to ensure no data spills over
+	reso = 0;
+	
+	for(c = 0;c<3;c++){
+		p = l = o = 0;
+		for(i = 0;i<getlength(l,WREC, NUMFRAMES);i++){
+			for(j = 0;j<getlength(l,WREC, 128);j++){
+				for(k = 0;k<getlength(l,WREC, 256);k++){
+					odata[(c*32*128*256)+((i*128+j)*256)+k] = rdata[reso++];
+					mdata[(c*32*128*256)+o+((i*128+j)*256)+k] = 1;
+				}
+			}
+		}
+		for(l = 0;l<WREC;l++){
+			for(p = 1;p<8;p++){
+				int o = getoffset(l,p,WREC,NUMFRAMES,128,256);
+				int aboveOffset = getoffset(l-1,p,WREC,NUMFRAMES,128,256);
+				if(l==0||fracts[c][(l-1)*2+1]>0){
+					preoffset = reso;
+					//Unpack this level data into results
+					for(i = 0;i<getlength(l,WREC, NUMFRAMES);i++){
+						for(j = 0;j<getlength(l,WREC, 128);j++){
+							for(k = 0;k<getlength(l,WREC, 256);k++){
+								if(l==0||(l>0 && mdata[aboveOffset+(c*32*128*256)+(((i/2)*128+(j/2))*256)+(k/2)])){
+#ifdef VERBOSEPRINT
+									if(l>0){
+										printf("Extract %d, %d: %d\n", (c*32*128*256)+o+((i*128+j)*256)+k, reso, rdata[reso]);
+									}
+#endif
+									odata[(c*32*128*256)+o+((i*128+j)*256)+k] = rdata[reso++];
+								} 
+							}
+						}
+					}
+					limit = fracts[c][l*2+1] == 0 ? 0: (getlength(l,WREC, NUMFRAMES)*getlength(l,WREC, 128)*getlength(l,WREC, 256)*fracts[c][l*2])/fracts[c][l*2+1];
+					count = 0;
+					if(limit > 0){
+						//counting sort 
+						memset(counts, 0, COUNTS_SIZE*sizeof(WAVELET_TYPE));
+						for(i = 0;i<getlength(l,WREC, NUMFRAMES);i++){
+							for(j = 0;j<getlength(l,WREC, 128);j++){
+								for(k = 0;k<getlength(l,WREC, 256);k++){
+									counts[abs(odata[(c*32*128*256)+o+((i*128+j)*256)+k])]++;
+								}
+							}
+						}
 
-	printf("Offset:%d\n", getoffset(1,4,WREC,32,128,256));
+						for(i = COUNTS_SIZE-1; i>=0; i--){
+							count += counts[i];
+							//printf("CA %i: %d\n", i, counts[i]);
+							if(count > limit){
+								//printf("Breakatlimit %d: %d (%d)\n", i, counts[i], reso);
+								count -= counts[i];
+								break;
+							}
+						}
+					}
+					cutoff = i;
+					//Create mask for next level
+					for(i = 0;i<getlength(l,WREC, NUMFRAMES);i++){
+						for(j = 0;j<getlength(l,WREC, 128);j++){
+							for(k = 0;k<getlength(l,WREC, 256);k++){
+								if(limit > 0 && abs(odata[(c*32*128*256)+o+((i*128+j)*256)+k]) > cutoff){
+									mdata[(c*32*128*256)+o+((i*128+j)*256)+k] = 1;
+								} else if (limit > 0 &&
+									abs(odata[(c*32*128*256)+o+((i*128+j)*256)+k]) == limit &&
+									count < limit){
+									//this should idealy be distruted eavenly over the picture
+									mdata[(c*32*128*256)+o+((i*128+j)*256)+k] = 1;
+									count++;
+								} else{
+									mdata[(c*32*128*256)+o+((i*128+j)*256)+k] = 0;
+								}
+							}
+						}
+					}
+					//Add extra data to results if neccesary
+					//printf("Offset after pack:Reso:%d Rem: %d (L:%d,P:%d;C:%d) [%d<%d]=%d*%d/%d\n", reso, rsize-reso, l, p, cutoff, count,limit, getlength(l,WREC, NUMFRAMES)*getlength(l,WREC, 128)*getlength(l,WREC, 256),fracts[c][l*2],fracts[c][l*2+1]);
+					int aboveLen;
+					if (l == 0){
+						aboveLen = (getlength(l,WREC, NUMFRAMES)*getlength(l,WREC, 128)*getlength(l,WREC, 256));
+					}else{
+						aboveLen = (fracts[c][(l-1)*2+1]==0)?0:((8*getlength(l-1,WREC, NUMFRAMES)*getlength(l-1,WREC, 128)*getlength(l-1,WREC, 256))*fracts[c][(l-1)*2])/fracts[c][(l-1)*2+1];
+					} 
+					if(reso<(preoffset+aboveLen)){
+						//printf("Must pad: (C:%d,L:%d,P:%d) Pad:%d+Retr:%d=Len:%d\n", c,l,p,(preoffset+aboveLen)-reso, reso-preoffset, aboveLen);
+						//printf("Padded: R:%d, (C:%d,L:%d,P:%d) D:%d, retrieved %d (co:%d)\n", reso, c, l, p,  abov-count, count,cutoff);
+					}					
+					if( reso> preoffset+aboveLen){
+						printf("Wrong progress %d!>%d (%d, %d,%d) %d\n", reso,preoffset+aboveLen, c, l,p, reso-(aboveLen+preoffset));	
+					}
+					reso = preoffset+aboveLen;
+				}
+			}
+		}
+	}
+	if(reso != rsize){
+		printf("Wrong progress at end %d\n", rsize-reso);
+	}
+
+	printf("Compressed size:%d\n", rsize);
+	
+	//sdata = odata;
 	#ifdef REVERSE
 	for(j=0;j<3;j++){
 		for(i=WREC-1;i>=0;i--){
-			d3iwt(&sdata[j*NUMFRAMES*128*256], i, NUMFRAMES, 128, 256);
+			d3iwt(&odata[j*NUMFRAMES*128*256], i, NUMFRAMES, 128, 256);
 		}
 	}
 	#endif
 
+	#ifndef DEMODONLY
+	free(sdata);
 	//}
 	#ifdef DIFF
 	for(i=0;i<fsize;i++){ 
-		sdata[i] -= tdata[i];
+		odata[i] -= tdata[i];
 	}
 	#endif
 	#ifdef ABSDATA
 	for(i=0;i<3*NUMFRAMES*128*256;i++){ 
-		sdata[i] = abs(sdata[i]);
+		odata[i] = abs(odata[i]);
 	}
 	#endif
+	#endif
 	FILE *outf = fopen("output.raw", "wb");
-	fwrite(sdata, sizeof(WAVELET_TYPE), fsize, outf);
+	fwrite(odata, sizeof(WAVELET_TYPE), fsize, outf);
 	fclose(outf);
+	#ifndef DEMODONLY
+	outf = fopen("compressed.raw", "wb");
+	fwrite(rdata, sizeof(WAVELET_TYPE), rsize, outf);
 	free(idata);
-	free(sdata);
+	#endif
+	//free(sdata);
 	free(tdata);
+	free(mdata);
+	free(rdata);
+	free(odata);
 }
 
 
