@@ -1,0 +1,4 @@
+Example conversion:
+The image in this folder is converted with python script to raw yuv, then compressed with cwttest, ran trough modem with lowpass filter etc, decompressed with cwt, and converted back with python script.
+
+Original image: Screenshot from debris by farbraush (http://www.farb-rausch.de/), code for the demo is under bsd license https://github.com/farbrausch/fr_public 

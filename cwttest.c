@@ -1,5 +1,5 @@
-#(c) 2013 Frederik M.J. Vestre 
-#Licensed under: http://www.gnu.org/licenses/agpl-3.0.html
+//(c) 2013 Frederik M.J. Vestre 
+//Licensed under: http://www.gnu.org/licenses/agpl-3.0.html
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -21,7 +21,7 @@
 //#define ABSDATA 1
 //#define SIMPLENOISE 1
 //NUMFRAMES768
-//#define DEMODONLY
+#define DEMODONLY
 void d3fwt(WAVELET_TYPE* x, int sdiv, int d, int h, int w);
 void d3iwt(WAVELET_TYPE* x, int sdiv, int d, int h, int w);
 void fwt53(WAVELET_TYPE* x,int n, int stride);
