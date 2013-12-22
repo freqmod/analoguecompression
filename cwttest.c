@@ -4,6 +4,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
+#include <tgmath.h>
 //#include "dwt97.cpp"
 #define WAVELET_TYPE int16_t
 #define TIMESCALE 1
@@ -21,12 +22,16 @@
 //#define ABSDATA 1
 //#define SIMPLENOISE 1
 //NUMFRAMES768
-#define DEMODONLY
+#define LOGCOMPRESSED 1
+#define LOGBASE 2
+#define LOGMULT 1.0f
+//#define DEMODONLY
+#define DCFIX 1
 void d3fwt(WAVELET_TYPE* x, int sdiv, int d, int h, int w);
 void d3iwt(WAVELET_TYPE* x, int sdiv, int d, int h, int w);
 void fwt53(WAVELET_TYPE* x,int n, int stride);
 void iwt53(WAVELET_TYPE* x,int n, int stride);
-inline int getoffset(int level, int part, int recursion, int d, int h, int w){
+static inline int getoffset(int level, int part, int recursion, int d, int h, int w){
 	int res = 0;
 	if((part & 1)==1){
 		res += w >> (recursion - level);
@@ -39,12 +44,13 @@ inline int getoffset(int level, int part, int recursion, int d, int h, int w){
 	}
 	return res;
 }
-inline int getlength(int level, int recursion, int original){
+static inline int getlength(int level, int recursion, int original){
 	return (original >> (recursion - level));
 }
 
 int main(){
-#define R16_1K
+#define R16_1KS
+//#define R16_1K
 #ifdef R4_8K
 	uint8_t fracts[3][8] =  {{1,1, 5,32, 0,0, 0,0},
 						     {0,0, 0,0, 0,0, 0,0}, 
@@ -57,6 +63,11 @@ int main(){
 #endif
 #ifdef R16_1K
 	uint8_t fracts[3][8] =  {{1,1, 10,12, 1,128, 0,0},
+						     {2,10, 0,0,  0,0, 0,0}, 
+						     {2,10, 0,0,  0,0, 0,0}};
+#endif
+#ifdef R16_1KS
+	uint8_t fracts[3][8] =  {{1,1, 11,12, 0,0, 0,0},
 						     {2,10, 0,0,  0,0, 0,0}, 
 						     {2,10, 0,0,  0,0, 0,0}};
 #endif
@@ -102,10 +113,29 @@ int main(){
 	}
 	WAVELET_TYPE *rdata = (WAVELET_TYPE*)calloc(rsize,sizeof(WAVELET_TYPE)); // (result compressed)
 
+	uint fstlvllen = getlength(0, WREC, NUMFRAMES) * getlength(0, WREC, 128) * getlength(0, WREC, 256);
 #ifdef  DEMODONLY
+	int dcread = 0;
 	FILE *inf = fopen("demod.raw", "rb");
-	int r = fread(rdata, 1, rsize*sizeof(WAVELET_TYPE), inf);
+#ifdef DCFIX
+	fread(&dcread, 1, sizeof(WAVELET_TYPE), inf);
+#endif
+	int r = fread(rdata, rsize, sizeof(WAVELET_TYPE), inf);
+	
 	fclose(inf);
+#ifdef LOGCOMPRESSED
+	for(i=0;i<rsize;i++){ 
+		rdata[i] = (pow(LOGBASE,(fabs(rdata[i]/ LOGMULT)))-1) * (rdata[i]<0?-1:1) ;
+	}
+#endif
+#ifdef DCFIX
+	printf("DC:%d\n", dcread);
+	for(i=0; i < fstlvllen; i++){
+		rdata[i]+=dcread;
+	}
+	
+#endif
+
 #else	
 	FILE *inf = fopen("input.raw", "rb");
 	fseek(inf, 0L, SEEK_END);
@@ -392,8 +422,28 @@ int main(){
 	FILE *outf = fopen("output.raw", "wb");
 	fwrite(odata, sizeof(WAVELET_TYPE), fsize, outf);
 	fclose(outf);
+#ifdef DCFIX
+	int32_t dc = 0;
+	for(i=0; i < fstlvllen; i++){
+		dc+=rdata[i];
+	}
+	dc/=fstlvllen;
+	printf("DC:%d\n", dc);
+	for(i=0; i < fstlvllen; i++){
+		rdata[i]-=dc;
+	}
+	
+#endif
 	#ifndef DEMODONLY
 	outf = fopen("compressed.raw", "wb");
+#ifdef LOGCOMPRESSED
+	for(i=0;i<rsize;i++){ 
+		rdata[i] = round(LOGMULT*(log10(1+fabs(rdata[i])) / log10(1.0*LOGBASE))) * (rdata[i]<0?-1:1);
+	}
+#endif
+#ifdef DCFIX
+	fwrite(&dc, sizeof(WAVELET_TYPE), 1, outf);
+#endif
 	fwrite(rdata, sizeof(WAVELET_TYPE), rsize, outf);
 	free(idata);
 	#endif
