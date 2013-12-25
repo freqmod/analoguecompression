@@ -3,7 +3,7 @@
 
 #Copyright 2013 Frederik M.J. Vestre AGplv3
 
-import optparse
+#import optparse
 import os
 import sys
 import operator

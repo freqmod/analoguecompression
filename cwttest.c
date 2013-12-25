@@ -22,9 +22,9 @@
 //#define ABSDATA 1
 //#define SIMPLENOISE 1
 //NUMFRAMES768
-#define LOGCOMPRESSED 1
+#define LOGCOMPRESSED R16_1K
 #define LOGBASE 2
-#define LOGMULT 1.0f
+#define LOGMULT 128.0f
 //#define DEMODONLY
 #define DCFIX 1
 void d3fwt(WAVELET_TYPE* x, int sdiv, int d, int h, int w);
@@ -67,9 +67,9 @@ int main(){
 						     {2,10, 0,0,  0,0, 0,0}};
 #endif
 #ifdef R16_1KS
-	uint8_t fracts[3][8] =  {{1,1, 11,12, 0,0, 0,0},
-						     {2,10, 0,0,  0,0, 0,0}, 
-						     {2,10, 0,0,  0,0, 0,0}};
+	uint8_t fracts[3][8] =  {{1,1, 12,12, 0,0, 0,0},
+						     {1,10, 0,0,  0,0, 0,0}, 
+						     {1,10, 0,0,  0,0, 0,0}};
 #endif
 #ifdef R24K
 	uint8_t fracts[3][8] =  {{1,1, 10,12, 9,128, 0,0},
